@@ -132,7 +132,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
   // only do any prefetching if there's a pattern of seeing the same
   // stride more than once
-  const int min_conf = 2;
+  const int min_conf = 3;
   if(trackers[tracker_index].conf >= min_conf)
     {
       // do some prefetching
