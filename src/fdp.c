@@ -20,7 +20,7 @@
 
 
 // Parameters
-#define T_INTERVAL 1024
+#define T_INTERVAL 8192
 #define PREFETCH_EVICT_SIZE 4096
 #define A_HIGH 0.75
 #define A_LOW 0.40
