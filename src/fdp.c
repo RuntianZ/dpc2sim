@@ -20,12 +20,12 @@
 
 
 // Parameters
-#define T_INTERVAL 1024
+#define T_INTERVAL 512
 #define PREFETCH_EVICT_SIZE 4096
 #define A_HIGH 0.75
 #define A_LOW 0.40
 #define T_LAT 0.01
-#define T_POL 0.01
+#define T_POL 0.005
 
 // #define DEBUG
 
