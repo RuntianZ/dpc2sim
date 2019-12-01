@@ -20,7 +20,7 @@
 
 
 // Parameters
-#define T_INTERVAL 1024
+#define T_INTERVAL 8192
 #define PREFETCH_EVICT_SIZE 4096
 #define A_HIGH 0.75
 #define A_LOW 0.40
@@ -381,7 +381,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 		float lat = (float)late_total / (float)used_total;
 		float pol = (float)miss_prefetch_total / (float)miss_total;
 
-		printf("Metric: acc %f  lat %f  pol %f\n\n", acc, lat, pol);
+		printf("Metric: acc %f  lat %f  pol %f\n", acc, lat, pol);
 
 		// acc_level: 0-Low, 1-Medium, 2-High
 		// lat_level: 0-Not_late, 1-Late
@@ -429,6 +429,8 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 			aggressive_level = 5;
 		if (aggressive_level < 1)
 			aggressive_level = 1;
+
+		printf("Aggressive level: %d\n\n", aggressive_level);
 
 		switch (aggressive_level) {
 		case 1:
