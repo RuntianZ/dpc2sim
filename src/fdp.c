@@ -374,16 +374,28 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 		miss_total = alpha * miss_total + (1 - alpha) * miss_cnt;
 		miss_prefetch_total = alpha * miss_prefetch_total + (1 - alpha) * miss_prefetch_cnt;
 
+		const float eps = 1e-3;
+		if (used_total < eps)
+			used_total = 0;
+		if (prefetch_total < eps)
+			prefetch_total = 0;
+		if (late_total < eps)
+			late_total = 0;
+		if (miss_total < eps)
+			miss_total = 0;
+		if (miss_prefetch_total < eps)
+			miss_prefetch_total = 0;
+
 		used_cnt = 0;
 		prefetch_cnt = 0;
 		late_cnt = 0;
 		miss_cnt = 0;
 		miss_prefetch_cnt = 0;
 
-		const float eps = 1e-6;
-		float acc = (prefetch_total < eps) ? 0 : (used_total / prefetch_total);
-		float lat = (used_total < eps) ? 0 : (late_total / used_total);
-		float pol = (miss_total < eps) ? 0 : (miss_prefetch_total / miss_total);
+		
+		float acc = (prefetch_total == 0) ? 0 : (used_total / prefetch_total);
+		float lat = (used_total == 0) ? 0 : (late_total / used_total);
+		float pol = (miss_total == 0) ? 0 : (miss_prefetch_total / miss_total);
 
 		printf("Metric: acc %f  lat %f  pol %f\n", acc, lat, pol);
 
