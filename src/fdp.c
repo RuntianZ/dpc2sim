@@ -366,7 +366,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 		printf("Count: %d %d %d %d %d\n", used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt);
 
-		const float alpha = 0.5
+		const float alpha = 0.5;
 
 		used_total = alpha * used_total + (1 - alpha) * used_cnt;
 		prefetch_total = alpha * prefetch_total + (1 - alpha) * prefetch_cnt;
