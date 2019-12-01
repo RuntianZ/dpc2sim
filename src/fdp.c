@@ -267,6 +267,8 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 		  
 		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
+		  if (w == -1)
+			  continue;
 		  // printf("\n%d\n", res);
 
 		  // Add to MSHR
