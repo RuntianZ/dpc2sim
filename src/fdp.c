@@ -27,6 +27,8 @@
 #define T_LAT 0.01
 #define T_POL 0.01
 
+#define DEBUG
+
 
 #define MSHR_SIZE 48
 int useful_bit[L2_SET_COUNT][L2_ASSOCIATIVITY];
