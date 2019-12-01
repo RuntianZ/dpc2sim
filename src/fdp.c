@@ -99,7 +99,7 @@ void l2_prefetcher_initialize(int cpu_num)
   for (i = 0; i < L2_SET_COUNT; i++)
 	  for (j = 0; j < L2_ASSOCIATIVITY; j++)
 		  useful_bit[i][j] = 0;
-  for (i = 0; i < L2_MSHR_COUNT) {
+  for (i = 0; i < L2_MSHR_COUNT; i++) {
 	  late_bit[i] = 0;
 	  mshr_valid[i] = 0;
   }
@@ -122,7 +122,9 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 	if (cache_hit) {
 		// Check pref-bit for usefulness
 		int s = l2_get_set(addr);
+		assert(s < L2_SET_COUNT);
 		int w = l2_get_way(0, addr, s);
+		assert(w < L2_ASSOCIATIVITY);
 
 		if (useful_bit[s][w]) {
 			used_cnt++;
@@ -281,7 +283,8 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, int prefetch, unsigned long long int evicted_addr)
 {
-
+	assert(set < L2_SET_COUNT);
+	assert(way < L2_ASSOCIATIVITY);
 	evict_cnt++;
 
 	// Virtual address
