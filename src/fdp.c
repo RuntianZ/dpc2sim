@@ -4,7 +4,7 @@
 //
 
 /*
-  
+
   FDP prefetcher
 
  */
@@ -16,7 +16,7 @@
 #define STREAM_DETECTOR_COUNT 64
 
 
-// Parameters
+ // Parameters
 #define T_INTERVAL 512
 #define PREFETCH_EVICT_SIZE 4096
 #define A_HIGH 0.75
@@ -35,10 +35,6 @@ int useful_bit[L2_SET_COUNT][L2_ASSOCIATIVITY];
 unsigned long long int mshr_addr[MSHR_SIZE];
 int mshr_valid[MSHR_SIZE];
 int late_bit[MSHR_SIZE];
-
-unsigned long long int read_queue_addr[MSHR_SIZE];
-int read_queue_valid[MSHR_SIZE];
-
 int prefetch_evict[PREFETCH_EVICT_SIZE];
 // Values in interval
 int used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt, evict_cnt;
@@ -50,17 +46,17 @@ int prefetch_degree, stream_window, aggressive_level;
 
 typedef struct stream_detector
 {
-  // which 4 KB page this detector is monitoring
-  unsigned long long int page;
-  
-  // + or - direction for the stream
-  int direction;
+	// which 4 KB page this detector is monitoring
+	unsigned long long int page;
 
-  // this must reach 2 before prefetches can begin
-  int confidence;
+	// + or - direction for the stream
+	int direction;
 
-  // cache line index within the page where prefetches will be issued
-  int pf_index;
+	// this must reach 2 before prefetches can begin
+	int confidence;
+
+	// cache line index within the page where prefetches will be issued
+	int pf_index;
 } stream_detector_t;
 
 stream_detector_t detectors[STREAM_DETECTOR_COUNT];
@@ -68,57 +64,56 @@ int replacement_index;
 
 void l2_prefetcher_initialize(int cpu_num)
 {
-  printf("FDP Prefetcher\n");
-  // you can inspect these knob values from your code to see which configuration you're runnig in
-  printf("Knobs visible from prefetcher: %d %d %d\n", knob_scramble_loads, knob_small_llc, knob_low_bandwidth);
+	printf("FDP Prefetcher\n");
+	// you can inspect these knob values from your code to see which configuration you're runnig in
+	printf("Knobs visible from prefetcher: %d %d %d\n", knob_scramble_loads, knob_small_llc, knob_low_bandwidth);
 
-  int i, j;
-  for(i=0; i<STREAM_DETECTOR_COUNT; i++)
-    {
-      detectors[i].page = 0;
-      detectors[i].direction = 0;
-      detectors[i].confidence = 0;
-      detectors[i].pf_index = -1;
-    }
+	int i, j;
+	for (i = 0; i < STREAM_DETECTOR_COUNT; i++)
+	{
+		detectors[i].page = 0;
+		detectors[i].direction = 0;
+		detectors[i].confidence = 0;
+		detectors[i].pf_index = -1;
+	}
 
-  replacement_index = 0;
-  used_total = 0;
-  prefetch_total = 0;
-  late_total = 0;
-  miss_total = 0;
-  miss_prefetch_total = 0; 
+	replacement_index = 0;
+	used_total = 0;
+	prefetch_total = 0;
+	late_total = 0;
+	miss_total = 0;
+	miss_prefetch_total = 0;
 
-  used_cnt = 0;
-  prefetch_cnt = 0;
-  late_cnt = 0;
-  miss_cnt = 0;
-  miss_prefetch_cnt = 0;
-  evict_cnt = 0;
+	used_cnt = 0;
+	prefetch_cnt = 0;
+	late_cnt = 0;
+	miss_cnt = 0;
+	miss_prefetch_cnt = 0;
+	evict_cnt = 0;
 
-  // Initial configuration
-  stream_window = 16;
-  prefetch_degree = 2;
-  aggressive_level = 3;
+	// Initial configuration
+	stream_window = 16;
+	prefetch_degree = 2;
+	aggressive_level = 3;
 
-  for (i = 0; i < L2_SET_COUNT; i++)
-	  for (j = 0; j < L2_ASSOCIATIVITY; j++)
-		  useful_bit[i][j] = 0;
-  for (i = 0; i < MSHR_SIZE; i++) {
-	  late_bit[i] = 0;
-	  mshr_valid[i] = 0;
-	  read_queue_valid[i] = 0;
-  }
-  for (i = 0; i < PREFETCH_EVICT_SIZE; i++)
-	  prefetch_evict[i] = 0;
+	for (i = 0; i < L2_SET_COUNT; i++)
+		for (j = 0; j < L2_ASSOCIATIVITY; j++)
+			useful_bit[i][j] = 0;
+	for (i = 0; i < MSHR_SIZE; i++) {
+		late_bit[i] = 0;
+		mshr_valid[i] = 0;
+	}
+	for (i = 0; i < PREFETCH_EVICT_SIZE; i++)
+		prefetch_evict[i] = 0;
 }
 
 void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned long long int ip, int cache_hit)
 {
-  // uncomment this line to see all the information available to make prefetch decisions
-  // printf("(%lld 0x%llx 0x%llx %d %d %d) ", get_current_cycle(0), addr, ip, cache_hit, get_l2_read_queue_occupancy(0), get_l2_mshr_occupancy(0));
+	// uncomment this line to see all the information available to make prefetch decisions
+	// printf("(%lld 0x%llx 0x%llx %d %d %d) ", get_current_cycle(0), addr, ip, cache_hit, get_l2_read_queue_occupancy(0), get_l2_mshr_occupancy(0));
 
 
-	// Virtual address
+	  // Virtual address
 	unsigned long long int cl_address = addr >> 6;
 	unsigned long long int a0 = cl_address & 0xfff;
 	unsigned long long int a1 = (cl_address >> 12) & 0xfff;
@@ -141,28 +136,8 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 	else {
 		miss_cnt++;
 
-		// Add to read queue
-		int mshr_index = 0;
-		while (mshr_index < MSHR_SIZE) {
-			if (read_queue_valid[mshr_index] && read_queue_addr[mshr_index] == cl_address)
-				break;
-			mshr_index++;
-		}
-
-		if (mshr_index == MSHR_SIZE) {
-			mshr_index = 0;
-			while (mshr_index < MSHR_SIZE) {
-				if (!read_queue_valid[mshr_index])
-					break;
-				mshr_index++;
-			}
-			assert(mshr_index < MSHR_SIZE);
-			read_queue_addr[mshr_index] = cl_address;
-			read_queue_valid[mshr_index] = 1;
-		}
-
 		// Check pref-bit for lateness
-		mshr_index = 0;
+		int mshr_index = 0;
 		while (mshr_index < MSHR_SIZE) {
 			if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
 				break;
@@ -184,174 +159,157 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 
 	// Original stream prefetch
-  
-  
-  unsigned long long int page = cl_address>>6;
-  int page_offset = cl_address&63;
 
-  // check for a detector hit
-  int detector_index = -1;
 
-  int i;
-  for(i=0; i<STREAM_DETECTOR_COUNT; i++)
-    {
-      if(detectors[i].page == page)
+	unsigned long long int page = cl_address >> 6;
+	int page_offset = cl_address & 63;
+
+	// check for a detector hit
+	int detector_index = -1;
+
+	int i;
+	for (i = 0; i < STREAM_DETECTOR_COUNT; i++)
 	{
-	  detector_index = i;
-	  break;
-	}
-    }
-
-  if(detector_index == -1)
-    {
-      // this is a new page that doesn't have a detector yet, so allocate one
-      detector_index = replacement_index;
-      replacement_index++;
-      if(replacement_index >= STREAM_DETECTOR_COUNT)
-	{
-	  replacement_index = 0;
+		if (detectors[i].page == page)
+		{
+			detector_index = i;
+			break;
+		}
 	}
 
-      // reset the oldest page
-      detectors[detector_index].page = page;
-      detectors[detector_index].direction = 0;
-      detectors[detector_index].confidence = 0;
-      detectors[detector_index].pf_index = page_offset;
-    }
-
-  // train on the new access
-  if(page_offset > detectors[detector_index].pf_index)
-    {
-      // accesses outside the stream_window do not train the detector
-      if((page_offset-detectors[detector_index].pf_index) < stream_window)
+	if (detector_index == -1)
 	{
-	  if(detectors[detector_index].direction == -1)
-	    {
-	      // previously-set direction was wrong
-	      detectors[detector_index].confidence = 0;
-	    }
-	  else
-	    {
-	      detectors[detector_index].confidence++;
-	    }
+		// this is a new page that doesn't have a detector yet, so allocate one
+		detector_index = replacement_index;
+		replacement_index++;
+		if (replacement_index >= STREAM_DETECTOR_COUNT)
+		{
+			replacement_index = 0;
+		}
 
-	  // set the direction to +1
-	  detectors[detector_index].direction = 1;
+		// reset the oldest page
+		detectors[detector_index].page = page;
+		detectors[detector_index].direction = 0;
+		detectors[detector_index].confidence = 0;
+		detectors[detector_index].pf_index = page_offset;
 	}
-    }
-  else if(page_offset < detectors[detector_index].pf_index)
-    {
-      // accesses outside the stream_window do not train the detector
-      if((detectors[detector_index].pf_index-page_offset) < stream_window)
+
+	// train on the new access
+	if (page_offset > detectors[detector_index].pf_index)
 	{
-          if(detectors[detector_index].direction == 1)
-            {
-	      // previously-set direction was wrong
-	      detectors[detector_index].confidence = 0;
-            }
-          else
-            {
-	      detectors[detector_index].confidence++;
-            }
+		// accesses outside the stream_window do not train the detector
+		if ((page_offset - detectors[detector_index].pf_index) < stream_window)
+		{
+			if (detectors[detector_index].direction == -1)
+			{
+				// previously-set direction was wrong
+				detectors[detector_index].confidence = 0;
+			}
+			else
+			{
+				detectors[detector_index].confidence++;
+			}
 
-	  // set the direction to -1
-          detectors[detector_index].direction = -1;
-        }
-    }
-
-  // prefetch if confidence is high enough
-  if(detectors[detector_index].confidence >= 2)
-    {
-      int i;
-      for(i=0; i<prefetch_degree; i++)
+			// set the direction to +1
+			detectors[detector_index].direction = 1;
+		}
+	}
+	else if (page_offset < detectors[detector_index].pf_index)
 	{
-	  detectors[detector_index].pf_index += detectors[detector_index].direction;
+		// accesses outside the stream_window do not train the detector
+		if ((detectors[detector_index].pf_index - page_offset) < stream_window)
+		{
+			if (detectors[detector_index].direction == 1)
+			{
+				// previously-set direction was wrong
+				detectors[detector_index].confidence = 0;
+			}
+			else
+			{
+				detectors[detector_index].confidence++;
+			}
 
-	  if((detectors[detector_index].pf_index < 0) || (detectors[detector_index].pf_index > 63))
-	    {
-	      // we've gone off the edge of a 4 KB page
-	      break;
-	    }
+			// set the direction to -1
+			detectors[detector_index].direction = -1;
+		}
+	}
 
-	  // perform prefetches
-	  unsigned long long int pf_address = (page<<12)+((detectors[detector_index].pf_index)<<6);
-	  
-	  // check MSHR occupancy to decide whether to prefetch into the L2 or LLC
-	  if(get_l2_mshr_occupancy(0) > 8)
-	    {
-	      // conservatively prefetch into the LLC, because MSHRs are scarce
-	      l2_prefetch_line(0, addr, pf_address, FILL_LLC);
-	    }
-	  else
-	    {
-	      // MSHRs not too busy, so prefetch into L2
+	// prefetch if confidence is high enough
+	if (detectors[detector_index].confidence >= 2)
+	{
+		int i;
+		for (i = 0; i < prefetch_degree; i++)
+		{
+			detectors[detector_index].pf_index += detectors[detector_index].direction;
 
-		  
-		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
+			if ((detectors[detector_index].pf_index < 0) || (detectors[detector_index].pf_index > 63))
+			{
+				// we've gone off the edge of a 4 KB page
+				break;
+			}
 
-		  // Add to Read queue
-		  int mshr_index = 0;
-		  while (mshr_index < MSHR_SIZE) {
-			  if (read_queue_valid[mshr_index] && read_queue_addr[mshr_index] == pf_address >> 6)
-				  break;
-			  mshr_index++;
-		  }
-		  if (mshr_index < MSHR_SIZE)
-			  continue;
+			// perform prefetches
+			unsigned long long int pf_address = (page << 12) + ((detectors[detector_index].pf_index) << 6);
 
-		  mshr_index = 0;
-		  while (mshr_index < MSHR_SIZE) {
-			  if (!read_queue_valid[mshr_index])
-				  break;
-			  mshr_index++;
-		  }
-		  assert(mshr_index < MSHR_SIZE);
-		  read_queue_addr[mshr_index] = pf_address >> 6;
-		  read_queue_valid[mshr_index] = 1;
+			// check MSHR occupancy to decide whether to prefetch into the L2 or LLC
+			if (get_l2_mshr_occupancy(0) > 8)
+			{
+				// conservatively prefetch into the LLC, because MSHRs are scarce
+				l2_prefetch_line(0, addr, pf_address, FILL_LLC);
+			}
+			else
+			{
+				// MSHRs not too busy, so prefetch into L2
 
-		  prefetch_cnt++;
-
-		  // Add to MSHR
-		  mshr_index = 0;
-		  while (mshr_index < MSHR_SIZE) {
-			  if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == pf_address >> 6)
-				  break;
-			  mshr_index++;
-		  }
+				// Check whether in cache
+				int s = l2_get_set(pf_address);
+				int w = l2_get_way(0, pf_address, s);
 
 
-		  if (mshr_index == MSHR_SIZE) {
-			  
-			  mshr_index = 0;
-			  while (mshr_index < MSHR_SIZE) {
-				  if (!mshr_valid[mshr_index])
-					  break;
-				  mshr_index++;
-			  }
-			  assert(mshr_index < MSHR_SIZE);
+				l2_prefetch_line(0, addr, pf_address, FILL_L2);
+				if (w != -1)
+					continue;
+				// printf("\n%d\n", res);
 
-			  mshr_valid[mshr_index] = 1;
-			  mshr_addr[mshr_index] = pf_address >> 6;
-			  late_bit[mshr_index] = 1;
-		  }
+				// Add to MSHR
+				int mshr_index = 0;
+				while (mshr_index < MSHR_SIZE) {
+					if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
+						break;
+					mshr_index++;
+				}
+
+				if (mshr_index == MSHR_SIZE) {
+					mshr_index = 0;
+					while (mshr_index < MSHR_SIZE) {
+						if (!mshr_valid[mshr_index])
+							break;
+						mshr_index++;
+					}
+					assert(mshr_index < MSHR_SIZE);
+
+					mshr_valid[mshr_index] = 1;
+					mshr_addr[mshr_index] = pf_address >> 6;
+					late_bit[mshr_index] = 1;
+				}
 
 #ifdef DEBUG
-		  printf("\n");
+				printf("\n");
 
-		  
-		  for (mshr_index = 0; mshr_index < MSHR_SIZE; mshr_index++) {
-			  if (mshr_valid[mshr_index]) {
-				  printf("In MSHR: 0x%llx\n", mshr_addr[mshr_index] << 6);
-			  }
-		  }
-		  
-		  // printf("MSHR: %d\n", get_l2_mshr_occupancy(0));
 
-		  printf("{%lld 0x%llx 0x%llx %d %d %d}\n\n", get_current_cycle(0), pf_address, ip, cache_hit, get_l2_read_queue_occupancy(0), get_l2_mshr_occupancy(0));
+				for (mshr_index = 0; mshr_index < MSHR_SIZE; mshr_index++) {
+					if (mshr_valid[mshr_index]) {
+						printf("In MSHR: 0x%llx\n", mshr_addr[mshr_index] << 6);
+					}
+				}
+
+				// printf("MSHR: %d\n", get_l2_mshr_occupancy(0));
+
+				printf("{%lld 0x%llx 0x%llx %d %d %d}\n\n", get_current_cycle(0), pf_address, ip, cache_hit, get_l2_read_queue_occupancy(0), get_l2_mshr_occupancy(0));
 #endif
-	    }
+			}
+		}
 	}
-    }
 }
 
 void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, int prefetch, unsigned long long int evicted_addr)
@@ -369,18 +327,8 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	unsigned long long int a1 = (cl_evict_address >> 12) & 0xfff;
 	unsigned long long int virt_addr = a0 ^ a1;
 
-	// Remove from read queue
-	int mshr_index = 0;
-	while (mshr_index < MSHR_SIZE) {
-		if (read_queue_valid[mshr_index] && read_queue_addr[mshr_index] == cl_address)
-			break;
-		mshr_index++;
-	}
-	assert(mshr_index < MSHR_SIZE);
-	read_queue_valid[mshr_index] = 0;
-
 	// Remove from mshr
-	mshr_index = 0;
+	int mshr_index = 0;
 	while (mshr_index < MSHR_SIZE) {
 		if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
 			break;
@@ -397,7 +345,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 	if (prefetch) {
 
-		// prefetch_cnt++;
+		prefetch_cnt++;
 		// Add to evicted bit vector
 		if (evicted_addr != 0)
 			prefetch_evict[virt_addr] = 1;
@@ -447,7 +395,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 		miss_cnt = 0;
 		miss_prefetch_cnt = 0;
 
-		
+
 		float acc = (prefetch_total == 0) ? 0 : (used_total / prefetch_total);
 		float lat = (used_total == 0) ? 0 : (late_total / used_total);
 		float pol = (miss_total == 0) ? 0 : (miss_prefetch_total / miss_total);
@@ -528,22 +476,22 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 	}
 #ifdef DEBUG
-  // uncomment this line to see the information available to you when there is a cache fill event
-  printf("0x%llx %d %d %d 0x%llx\n", addr, set, way, prefetch, evicted_addr);
+	// uncomment this line to see the information available to you when there is a cache fill event
+	printf("0x%llx %d %d %d 0x%llx\n", addr, set, way, prefetch, evicted_addr);
 #endif
 }
 
 void l2_prefetcher_heartbeat_stats(int cpu_num)
 {
-  printf("Prefetcher heartbeat stats\n");
+	printf("Prefetcher heartbeat stats\n");
 }
 
 void l2_prefetcher_warmup_stats(int cpu_num)
 {
-  printf("Prefetcher warmup complete stats\n\n");
+	printf("Prefetcher warmup complete stats\n\n");
 }
 
 void l2_prefetcher_final_stats(int cpu_num)
 {
-  printf("Prefetcher final stats\n");
+	printf("Prefetcher final stats\n");
 }
