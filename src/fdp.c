@@ -267,7 +267,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		  if (w != -1)
 			  continue;
 
-		  prefetch_total++;
+		  prefetch_cnt++;
 		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
 		  // printf("\n%d\n", res);
 
