@@ -367,6 +367,11 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	if (evict_cnt == T_INTERVAL) {
 		evict_cnt = 0;
 
+		int j;
+		for (j = 0; j < MSHR_SIZE; j++)
+			if (mshr_valid[j])
+				prefetch_cnt++;
+
 		printf("Count: %d %d %d %d %d\n", used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt);
 
 		const float alpha = 0.5;
