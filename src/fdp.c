@@ -298,6 +298,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		  }
 		  if (mshr_index < MSHR_SIZE)
 			  continue;
+
 		  mshr_index = 0;
 		  while (mshr_index < MSHR_SIZE) {
 			  if (!read_queue_valid[mshr_index])
@@ -307,6 +308,8 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		  assert(mshr_index < MSHR_SIZE);
 		  read_queue_addr[mshr_index] = pf_address >> 6;
 		  read_queue_valid[mshr_index] = 1;
+
+		  prefetch_cnt++;
 
 		  // Add to MSHR
 		  mshr_index = 0;
@@ -318,7 +321,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 
 		  if (mshr_index == MSHR_SIZE) {
-			  // prefetch_cnt++;
+			  
 			  mshr_index = 0;
 			  while (mshr_index < MSHR_SIZE) {
 				  if (!mshr_valid[mshr_index])
@@ -394,7 +397,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 	if (prefetch) {
 
-		prefetch_cnt++;
+		// prefetch_cnt++;
 		// Add to evicted bit vector
 		if (evicted_addr != 0)
 			prefetch_evict[virt_addr] = 1;
