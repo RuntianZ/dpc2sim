@@ -270,6 +270,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		  }
 
 		  if (mshr_index == L2_MSHR_COUNT) {
+			  mshr_index = 0;
 			  while (mshr_index < L2_MSHR_COUNT) {
 				  if (!mshr_valid[mshr_index])
 					  break;
