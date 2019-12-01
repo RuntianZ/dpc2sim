@@ -279,6 +279,8 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 			  mshr_index++;
 		  }
 
+		  prefetch_cnt++;
+
 		  if (mshr_index == MSHR_SIZE) {
 			  mshr_index = 0;
 			  while (mshr_index < MSHR_SIZE) {
@@ -345,7 +347,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 	if (prefetch) {
 
-		prefetch_cnt++;
+		// prefetch_cnt++;
 		// Add to evicted bit vector
 		if (evicted_addr != 0)
 			prefetch_evict[virt_addr] = 1;
