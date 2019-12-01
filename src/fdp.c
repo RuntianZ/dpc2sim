@@ -267,7 +267,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 		  
 		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
-		  if (w == -1)
+		  if (w != -1)
 			  continue;
 		  // printf("\n%d\n", res);
 
@@ -279,7 +279,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 			  mshr_index++;
 		  }
 
-		  if (mshr_index == L2_MSHR_COUNT && w == -1) {
+		  if (mshr_index == L2_MSHR_COUNT) {
 			  mshr_index = 0;
 			  while (mshr_index < L2_MSHR_COUNT) {
 				  if (!mshr_valid[mshr_index])
