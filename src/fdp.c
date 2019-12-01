@@ -264,15 +264,24 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		  // Add to MSHR
 		  int mshr_index = 0;
 		  while (mshr_index < L2_MSHR_COUNT) {
-			  if (!mshr_valid[mshr_index])
+			  if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
 				  break;
 			  mshr_index++;
 		  }
-		  assert(mshr_index < L2_MSHR_COUNT);
 
-		  mshr_valid[mshr_index] = 1;
-		  mshr_addr[mshr_index] = pf_address >> 6;
-		  late_bit[mshr_index] = 1;
+		  if (mshr_index == L2_MSHR_COUNT) {
+			  while (mshr_index < L2_MSHR_COUNT) {
+				  if (!mshr_valid[mshr_index])
+					  break;
+				  mshr_index++;
+			  }
+			  assert(mshr_index < L2_MSHR_COUNT);
+
+			  mshr_valid[mshr_index] = 1;
+			  mshr_addr[mshr_index] = pf_address >> 6;
+			  late_bit[mshr_index] = 1;
+		  }
+
 
 		  prefetch_total++;
 		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
