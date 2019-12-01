@@ -364,7 +364,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	if (evict_cnt == T_INTERVAL) {
 		evict_cnt = 0;
 
-		printf("Count: %d %d %d %d %d\n", used_total, prefetch_total, late_total, miss_total, miss_prefetch_total);
+		printf("Count: %d %d %d %d %d\n", used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt);
 		used_total = (used_total >> 1) + (used_cnt >> 1);
 		prefetch_total = (prefetch_total >> 1) + (prefetch_cnt >> 1);
 		late_total = (late_total >> 1) + (late_cnt >> 1);
