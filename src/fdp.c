@@ -260,6 +260,13 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 	  else
 	    {
 	      // MSHRs not too busy, so prefetch into L2
+
+		  // Check whether in cache
+		  int s = l2_get_set(pf_address);
+		  int w = l2_get_way(0, pf_address, s);
+		  if (w != -1)
+			  continue;
+
 		  prefetch_total++;
 		  int res = l2_prefetch_line(0, addr, pf_address, FILL_L2);
 		  printf("\n%d\n", res);
