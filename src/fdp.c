@@ -110,7 +110,7 @@ void l2_prefetcher_initialize(int cpu_num)
 void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned long long int ip, int cache_hit)
 {
   // uncomment this line to see all the information available to make prefetch decisions
-  //printf("(%lld 0x%llx 0x%llx %d %d %d) ", get_current_cycle(0), addr, ip, cache_hit, get_l2_read_queue_occupancy(0), get_l2_mshr_occupancy(0));
+  printf("(%lld 0x%llx 0x%llx %d %d %d) ", get_current_cycle(0), addr, ip, cache_hit, get_l2_read_queue_occupancy(0), get_l2_mshr_occupancy(0));
 
 
 	// Virtual address
@@ -422,7 +422,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	}
 
   // uncomment this line to see the information available to you when there is a cache fill event
-  //printf("0x%llx %d %d %d 0x%llx\n", addr, set, way, prefetch, evicted_addr);
+  printf("0x%llx %d %d %d 0x%llx\n", addr, set, way, prefetch, evicted_addr);
 }
 
 void l2_prefetcher_heartbeat_stats(int cpu_num)
