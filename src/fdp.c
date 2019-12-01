@@ -274,7 +274,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 				// Add to MSHR
 				int mshr_index = 0;
 				while (mshr_index < MSHR_SIZE) {
-					if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
+					if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == (pf_address >> 6))
 						break;
 					mshr_index++;
 				}
