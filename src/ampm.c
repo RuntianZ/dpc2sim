@@ -321,7 +321,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 				// Add to MSHR
 				int mshr_index = 0;
 				while (mshr_index < MSHR_SIZE) {
-					if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == pf_address >> 6)
+					if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == (pf_address >> 6))
 						break;
 					mshr_index++;
 				}
@@ -422,6 +422,13 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	// Check interval
 	if (evict_cnt == T_INTERVAL) {
 		evict_cnt = 0;
+
+		int j;
+		for (j = 0; j < MSHR_SIZE; j++)
+			if (mshr_valid[j])
+				prefetch_cnt++;
+		if (prefetch_cnt < used_cnt)
+			prefetch_cnt = used_cnt;
 
 		printf("Count: %d %d %d %d %d\n", used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt);
 
