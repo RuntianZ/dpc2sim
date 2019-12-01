@@ -318,7 +318,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 	// Virtual address
 	unsigned long long int cl_address = addr >> 6;
-	unsigned long long int cl_evict_address = addr >> 6;
+	unsigned long long int cl_evict_address = evicted_addr >> 6;
 	unsigned long long int a0 = cl_evict_address & 0xfff;
 	unsigned long long int a1 = (cl_evict_address >> 12) & 0xfff;
 	unsigned long long int virt_addr = a0 ^ a1;
