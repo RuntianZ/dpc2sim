@@ -264,8 +264,6 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		  // Check whether in cache
 		  int s = l2_get_set(pf_address);
 		  int w = l2_get_way(0, pf_address, s);
-		  if (w != -1)
-			  continue;
 
 		  prefetch_cnt++;
 		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
@@ -279,7 +277,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 			  mshr_index++;
 		  }
 
-		  if (mshr_index == L2_MSHR_COUNT) {
+		  if (mshr_index == L2_MSHR_COUNT && w == -1) {
 			  mshr_index = 0;
 			  while (mshr_index < L2_MSHR_COUNT) {
 				  if (!mshr_valid[mshr_index])
