@@ -364,6 +364,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	if (evict_cnt == T_INTERVAL) {
 		evict_cnt = 0;
 
+		printf("Count: %d %d %d %d %d\n", used_total, prefetch_total, late_total, miss_total, miss_prefetch_total);
 		used_total = (used_total >> 1) + (used_cnt >> 1);
 		prefetch_total = (prefetch_total >> 1) + (prefetch_cnt >> 1);
 		late_total = (late_total >> 1) + (late_cnt >> 1);
@@ -380,7 +381,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 		float lat = (float)late_total / (float)used_total;
 		float pol = (float)miss_prefetch_total / (float)miss_total;
 
-		printf("Metric: acc %f  lat %f  pol %f\n", acc, lat, pol);
+		printf("Metric: acc %f  lat %f  pol %f\n\n", acc, lat, pol);
 
 		// acc_level: 0-Low, 1-Medium, 2-High
 		// lat_level: 0-Not_late, 1-Late
