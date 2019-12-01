@@ -28,13 +28,14 @@
 #define T_POL 0.01
 
 
+#define MSHR_SIZE 48
 int useful_bit[L2_SET_COUNT][L2_ASSOCIATIVITY];
 
 // This mshr is only for prefetched lines
 // mshr_addr stores addr >> 6
-unsigned long long int mshr_addr[L2_MSHR_COUNT];
-int mshr_valid[L2_MSHR_COUNT];
-int late_bit[L2_MSHR_COUNT];
+unsigned long long int mshr_addr[MSHR_SIZE];
+int mshr_valid[MSHR_SIZE];
+int late_bit[MSHR_SIZE];
 int prefetch_evict[PREFETCH_EVICT_SIZE];
 // Values in interval
 int used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt, evict_cnt;
@@ -99,7 +100,7 @@ void l2_prefetcher_initialize(int cpu_num)
   for (i = 0; i < L2_SET_COUNT; i++)
 	  for (j = 0; j < L2_ASSOCIATIVITY; j++)
 		  useful_bit[i][j] = 0;
-  for (i = 0; i < L2_MSHR_COUNT; i++) {
+  for (i = 0; i < MSHR_SIZE; i++) {
 	  late_bit[i] = 0;
 	  mshr_valid[i] = 0;
   }
@@ -138,13 +139,13 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 		// Check pref-bit for lateness
 		int mshr_index = 0;
-		while (mshr_index < L2_MSHR_COUNT) {
+		while (mshr_index < MSHR_SIZE) {
 			if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
 				break;
 			mshr_index++;
 		}
 
-		if (mshr_index < L2_MSHR_COUNT) {
+		if (mshr_index < MSHR_SIZE) {
 			if (late_bit[mshr_index]) {
 				late_cnt++;
 				used_cnt++;
@@ -273,20 +274,20 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 		  // Add to MSHR
 		  int mshr_index = 0;
-		  while (mshr_index < L2_MSHR_COUNT) {
+		  while (mshr_index < MSHR_SIZE) {
 			  if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
 				  break;
 			  mshr_index++;
 		  }
 
-		  if (mshr_index == L2_MSHR_COUNT) {
+		  if (mshr_index == MSHR_SIZE) {
 			  mshr_index = 0;
-			  while (mshr_index < L2_MSHR_COUNT) {
+			  while (mshr_index < MSHR_SIZE) {
 				  if (!mshr_valid[mshr_index])
 					  break;
 				  mshr_index++;
 			  }
-			  assert(mshr_index < L2_MSHR_COUNT);
+			  assert(mshr_index < MSHR_SIZE);
 
 			  mshr_valid[mshr_index] = 1;
 			  mshr_addr[mshr_index] = pf_address >> 6;
@@ -295,7 +296,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 		  printf("\n");
 		  
-		  for (mshr_index = 0; mshr_index < L2_MSHR_COUNT; mshr_index++) {
+		  for (mshr_index = 0; mshr_index < MSHR_SIZE; mshr_index++) {
 			  if (mshr_valid[mshr_index]) {
 				  printf("In MSHR: 0x%llx\n", mshr_addr[mshr_index] << 6);
 			  }
@@ -327,13 +328,13 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 	// Remove from mshr
 	int mshr_index = 0;
-	while (mshr_index < L2_MSHR_COUNT) {
+	while (mshr_index < MSHR_SIZE) {
 		if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
 			break;
 		mshr_index++;
 	}
 
-	if (mshr_index < L2_MSHR_COUNT) {
+	if (mshr_index < MSHR_SIZE) {
 		// Set pref-bit for usefulness
 		useful_bit[set][way] = late_bit[mshr_index];
 
