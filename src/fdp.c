@@ -25,7 +25,7 @@
 #define A_HIGH 0.75
 #define A_LOW 0.40
 #define T_LAT 0.01
-#define T_POL 0.5
+#define T_POL 0.01
 
 
 int useful_bit[L2_SET_COUNT][L2_ASSOCIATIVITY];
