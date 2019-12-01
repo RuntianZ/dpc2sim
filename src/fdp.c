@@ -27,10 +27,10 @@
 #define T_LAT 0.01
 #define T_POL 0.01
 
-#define DEBUG
+// #define DEBUG
 
 
-#define MSHR_SIZE 48
+#define MSHR_SIZE 256
 int useful_bit[L2_SET_COUNT][L2_ASSOCIATIVITY];
 
 // This mshr is only for prefetched lines
