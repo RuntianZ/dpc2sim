@@ -14,6 +14,7 @@
  */
 
 #include <stdio.h>
+#include <assert.h>
 #include "../inc/prefetcher.h"
 
 #define AMPM_PAGE_COUNT 64
@@ -72,13 +73,12 @@ void l2_prefetcher_initialize(int cpu_num)
 	// you can inspect these knob values from your code to see which configuration you're runnig in
 	printf("Knobs visible from prefetcher: %d %d %d\n", knob_scramble_loads, knob_small_llc, knob_low_bandwidth);
 
-	int i;
+	int i, j;
 	for (i = 0; i < AMPM_PAGE_COUNT; i++)
 	{
 		ampm_pages[i].page = 0;
 		ampm_pages[i].lru = 0;
 
-		int j;
 		for (j = 0; j < 64; j++)
 		{
 			ampm_pages[i].access_map[j] = 0;
@@ -89,8 +89,6 @@ void l2_prefetcher_initialize(int cpu_num)
 	prefetch_degree = 2;
 	aggressive_level = 3;
 
-
-	replacement_index = 0;
 	used_total = 0;
 	prefetch_total = 0;
 	late_total = 0;
