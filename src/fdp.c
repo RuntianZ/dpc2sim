@@ -5,10 +5,7 @@
 
 /*
   
-  This file describes a streaming prefetcher. Prefetches are issued after
-  a spatial locality is detected, and a stream direction can be determined.
-
-  Prefetches are issued into the L2 or LLC depending on L2 MSHR occupancy.
+  FDP prefetcher
 
  */
 
@@ -67,7 +64,7 @@ int replacement_index;
 
 void l2_prefetcher_initialize(int cpu_num)
 {
-  printf("Streaming Prefetcher\n");
+  printf("FDP Prefetcher\n");
   // you can inspect these knob values from your code to see which configuration you're runnig in
   printf("Knobs visible from prefetcher: %d %d %d\n", knob_scramble_loads, knob_small_llc, knob_low_bandwidth);
 
