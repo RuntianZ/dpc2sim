@@ -287,7 +287,9 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 {
 	assert(set < L2_SET_COUNT);
 	assert(way < L2_ASSOCIATIVITY);
-	evict_cnt++;
+
+	if (evicted_addr != 0)
+		evict_cnt++;
 
 	// Virtual address
 	unsigned long long int cl_address = addr >> 6;
@@ -296,25 +298,27 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	unsigned long long int a1 = (cl_evict_address >> 12) & 0xfff;
 	unsigned long long int virt_addr = a0 ^ a1;
 
-	if (prefetch) {
+	// Remove from mshr
+	int mshr_index = 0;
+	while (mshr_index < L2_MSHR_COUNT) {
+		if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
+			break;
+		mshr_index++;
+	}
 
-		// Remove from mshr
-		int mshr_index = 0;
-		while (mshr_index < L2_MSHR_COUNT) {
-			if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
-				break;
-			mshr_index++;
-		}
-		assert(mshr_index < L2_MSHR_COUNT);
-
+	if (mshr_index < L2_MSHR_COUNT) {
 		// Set pref-bit for usefulness
 		useful_bit[set][way] = late_bit[mshr_index];
 
 		mshr_valid[mshr_index] = 0;
 		late_bit[mshr_index] = 0;
+	}
+
+	if (prefetch) {
 
 		// Add to evicted bit vector
-		prefetch_evict[virt_addr] = 1;
+		if (evicted_addr != 0)
+			prefetch_evict[virt_addr] = 1;
 
 		// Reset fetched bit vector
 		unsigned long long int a0 = cl_address & 0xfff;
@@ -324,7 +328,8 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	}
 	else {
 		useful_bit[set][way] = 0;
-		prefetch_evict[virt_addr] = 0;
+		if (evicted_addr != 0)
+			prefetch_evict[virt_addr] = 0;
 	}
 
 
