@@ -342,22 +342,21 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	if (prefetch) {
 
 		prefetch_cnt++;
-
 		// Add to evicted bit vector
 		if (evicted_addr != 0)
 			prefetch_evict[virt_addr] = 1;
-
-		// Reset fetched bit vector
-		unsigned long long int a0 = cl_address & 0xfff;
-		unsigned long long int a1 = (cl_address >> 12) & 0xfff;
-		unsigned long long int virt_new_addr = a0 ^ a1;
-		prefetch_evict[virt_new_addr] = 0;
 	}
 	else {
 		useful_bit[set][way] = 0;
 		if (evicted_addr != 0)
 			prefetch_evict[virt_addr] = 0;
 	}
+
+	// Reset fetched bit vector
+	a0 = cl_address & 0xfff;
+	a1 = (cl_address >> 12) & 0xfff;
+	virt_addr = a0 ^ a1;
+	prefetch_evict[virt_addr] = 0;
 
 
 	// Check interval
