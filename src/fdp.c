@@ -134,6 +134,8 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 	}
 	else {
+		miss_cnt++;
+
 		// Check pref-bit for lateness
 		int mshr_index = 0;
 		while (mshr_index < L2_MSHR_COUNT) {
@@ -141,22 +143,19 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 				break;
 			mshr_index++;
 		}
-		assert(mshr_index < L2_MSHR_COUNT);
 
-		if (late_bit[mshr_index]) {
-			late_cnt++;
-			used_cnt++;
-			late_bit[mshr_index] = 0;
+		if (mshr_index < L2_MSHR_COUNT) {
+			if (late_bit[mshr_index]) {
+				late_cnt++;
+				used_cnt++;
+				late_bit[mshr_index] = 0;
+			}
 		}
 
 		// Check for cache pollution
-		miss_cnt++;
 		if (prefetch_evict[virt_addr])
 			miss_prefetch_cnt++;
 	}
-
-
-
 
 
 	// Original stream prefetch
