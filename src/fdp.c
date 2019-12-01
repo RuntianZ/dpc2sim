@@ -371,6 +371,8 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 		for (j = 0; j < MSHR_SIZE; j++)
 			if (mshr_valid[j])
 				prefetch_cnt++;
+		if (prefetch_cnt < used_cnt)
+			prefetch_cnt = used_cnt;
 
 		printf("Count: %d %d %d %d %d\n", used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt);
 
