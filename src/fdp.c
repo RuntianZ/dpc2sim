@@ -35,6 +35,10 @@ int useful_bit[L2_SET_COUNT][L2_ASSOCIATIVITY];
 unsigned long long int mshr_addr[MSHR_SIZE];
 int mshr_valid[MSHR_SIZE];
 int late_bit[MSHR_SIZE];
+
+unsigned long long int read_queue_addr[MSHR_SIZE];
+int read_queue_valid[MSHR_SIZE];
+
 int prefetch_evict[PREFETCH_EVICT_SIZE];
 // Values in interval
 int used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt, evict_cnt;
@@ -102,6 +106,7 @@ void l2_prefetcher_initialize(int cpu_num)
   for (i = 0; i < MSHR_SIZE; i++) {
 	  late_bit[i] = 0;
 	  mshr_valid[i] = 0;
+	  read_queue_valid[i] = 0;
   }
   for (i = 0; i < PREFETCH_EVICT_SIZE; i++)
 	  prefetch_evict[i] = 0;
@@ -136,8 +141,28 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 	else {
 		miss_cnt++;
 
-		// Check pref-bit for lateness
+		// Add to read queue
 		int mshr_index = 0;
+		while (mshr_index < MSHR_SIZE) {
+			if (read_queue_valid[mshr_index] && read_queue_addr[mshr_index] == cl_address)
+				break;
+			mshr_index++;
+		}
+
+		if (mshr_index == MSHR_SIZE) {
+			mshr_index = 0;
+			while (mshr_index < MSHR_SIZE) {
+				if (!read_queue_valid[mshr_index])
+					break;
+				mshr_index++;
+			}
+			assert(mshr_index < MSHR_SIZE);
+			read_queue_addr[mshr_index] = cl_address;
+			read_queue_valid[mshr_index] = 1;
+		}
+
+		// Check pref-bit for lateness
+		mshr_index = 0;
 		while (mshr_index < MSHR_SIZE) {
 			if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
 				break;
@@ -261,18 +286,30 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 	    {
 	      // MSHRs not too busy, so prefetch into L2
 
-		  // Check whether in cache
-		  int s = l2_get_set(pf_address);
-		  int w = l2_get_way(0, pf_address, s);
-
 		  
 		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
-		  if (w != -1)
+
+		  // Add to Read queue
+		  int mshr_index = 0;
+		  while (mshr_index < MSHR_SIZE) {
+			  if (read_queue_valid[mshr_index] && read_queue_addr[mshr_index] == pf_address >> 6)
+				  break;
+			  mshr_index++;
+		  }
+		  if (mshr_index < MSHR_SIZE)
 			  continue;
-		  // printf("\n%d\n", res);
+		  mshr_index = 0;
+		  while (mshr_index < MSHR_SIZE) {
+			  if (!read_queue_valid[mshr_index])
+				  break;
+			  mshr_index++;
+		  }
+		  assert(mshr_index < MSHR_SIZE);
+		  read_queue_addr[mshr_index] = pf_address >> 6;
+		  read_queue_valid[mshr_index] = 1;
 
 		  // Add to MSHR
-		  int mshr_index = 0;
+		  mshr_index = 0;
 		  while (mshr_index < MSHR_SIZE) {
 			  if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == pf_address >> 6)
 				  break;
@@ -281,7 +318,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 
 
 		  if (mshr_index == MSHR_SIZE) {
-			  prefetch_cnt++;
+			  // prefetch_cnt++;
 			  mshr_index = 0;
 			  while (mshr_index < MSHR_SIZE) {
 				  if (!mshr_valid[mshr_index])
@@ -329,8 +366,18 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 	unsigned long long int a1 = (cl_evict_address >> 12) & 0xfff;
 	unsigned long long int virt_addr = a0 ^ a1;
 
-	// Remove from mshr
+	// Remove from read queue
 	int mshr_index = 0;
+	while (mshr_index < MSHR_SIZE) {
+		if (read_queue_valid[mshr_index] && read_queue_addr[mshr_index] == cl_address)
+			break;
+		mshr_index++;
+	}
+	assert(mshr_index < MSHR_SIZE);
+	read_queue_valid[mshr_index] = 0;
+
+	// Remove from mshr
+	mshr_index = 0;
 	while (mshr_index < MSHR_SIZE) {
 		if (mshr_valid[mshr_index] && mshr_addr[mshr_index] == cl_address)
 			break;
@@ -347,7 +394,7 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 	if (prefetch) {
 
-		// prefetch_cnt++;
+		prefetch_cnt++;
 		// Add to evicted bit vector
 		if (evicted_addr != 0)
 			prefetch_evict[virt_addr] = 1;
