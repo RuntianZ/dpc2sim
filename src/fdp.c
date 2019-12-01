@@ -260,8 +260,6 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 	  else
 	    {
 	      // MSHRs not too busy, so prefetch into L2
-	      l2_prefetch_line(0, addr, pf_address, FILL_L2);
-		  prefetch_total++;
 
 		  // Add to MSHR
 		  int mshr_index = 0;
@@ -275,6 +273,10 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		  mshr_valid[mshr_index] = 1;
 		  mshr_addr[mshr_index] = pf_address >> 6;
 		  late_bit[mshr_index] = 1;
+
+		  prefetch_total++;
+		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
+		  
 	    }
 	}
     }
