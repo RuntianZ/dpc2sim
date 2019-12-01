@@ -283,10 +283,10 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 			  late_bit[mshr_index] = 1;
 		  }
 
-
+		  print("\nMSHR: %d\n", get_l2_mshr_occupancy(0));
 		  prefetch_total++;
 		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
-		  printf("\n{%lld 0x%llx 0x%llx %d %d %d}\n\n", get_current_cycle(0), pf_address, ip, cache_hit, get_l2_read_queue_occupancy(0), get_l2_mshr_occupancy(0));
+		  printf("{%lld 0x%llx 0x%llx %d %d %d}\n\n", get_current_cycle(0), pf_address, ip, cache_hit, get_l2_read_queue_occupancy(0), get_l2_mshr_occupancy(0));
 		  
 	    }
 	}
