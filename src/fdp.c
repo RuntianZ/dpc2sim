@@ -39,7 +39,7 @@ int prefetch_evict[PREFETCH_EVICT_SIZE];
 // Values in interval
 int used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt, evict_cnt;
 // Values global
-int used_total, prefetch_total, late_total, miss_total, miss_prefetch_total;
+float used_total, prefetch_total, late_total, miss_total, miss_prefetch_total;
 
 int prefetch_degree, stream_window, aggressive_level;
 
@@ -124,7 +124,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		int s = l2_get_set(addr);
 		assert(s < L2_SET_COUNT);
 		int w = l2_get_way(0, addr, s);
-		assert(w < L2_ASSOCIATIVITY);
+		assert(w < L2_ASSOCIATIVITY && w >= 0);
 
 		if (useful_bit[s][w]) {
 			used_cnt++;
@@ -265,7 +265,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		  int s = l2_get_set(pf_address);
 		  int w = l2_get_way(0, pf_address, s);
 
-		  prefetch_cnt++;
+		  
 		  l2_prefetch_line(0, addr, pf_address, FILL_L2);
 		  // printf("\n%d\n", res);
 
@@ -341,6 +341,8 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 	if (prefetch) {
 
+		prefetch_cnt++;
+
 		// Add to evicted bit vector
 		if (evicted_addr != 0)
 			prefetch_evict[virt_addr] = 1;
@@ -363,11 +365,14 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 		evict_cnt = 0;
 
 		printf("Count: %d %d %d %d %d\n", used_cnt, prefetch_cnt, late_cnt, miss_cnt, miss_prefetch_cnt);
-		used_total = (used_total >> 1) + (used_cnt >> 1);
-		prefetch_total = (prefetch_total >> 1) + (prefetch_cnt >> 1);
-		late_total = (late_total >> 1) + (late_cnt >> 1);
-		miss_total = (miss_total >> 1) + (miss_cnt >> 1);
-		miss_prefetch_total = (miss_prefetch_total >> 1) + (miss_prefetch_cnt >> 1);
+
+		const float alpha = 0.5
+
+		used_total = alpha * used_total + (1 - alpha) * used_cnt;
+		prefetch_total = alpha * prefetch_total + (1 - alpha) * prefetch_cnt;
+		late_total = alpha * late_total + (1 - alpha) * late_cnt;
+		miss_total = alpha * miss_total + (1 - alpha) * miss_cnt;
+		miss_prefetch_total = alpha * miss_prefetch_total + (1 - alpha) * miss_prefetch_cnt;
 
 		used_cnt = 0;
 		prefetch_cnt = 0;
@@ -375,9 +380,10 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 		miss_cnt = 0;
 		miss_prefetch_cnt = 0;
 
-		float acc = (float)used_total / (float)prefetch_total;
-		float lat = (float)late_total / (float)used_total;
-		float pol = (float)miss_prefetch_total / (float)miss_total;
+		const float eps = 1e-6;
+		float acc = (prefetch_total < eps) ? 0 : (used_total / prefetch_total);
+		float lat = (used_total < eps) ? 0 : (late_total / used_total);
+		float pol = (miss_total < eps) ? 0 : (miss_prefetch_total / miss_total);
 
 		printf("Metric: acc %f  lat %f  pol %f\n", acc, lat, pol);
 
