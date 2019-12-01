@@ -279,9 +279,9 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 			  mshr_index++;
 		  }
 
-		  prefetch_cnt++;
 
 		  if (mshr_index == MSHR_SIZE) {
+			  prefetch_cnt++;
 			  mshr_index = 0;
 			  while (mshr_index < MSHR_SIZE) {
 				  if (!mshr_valid[mshr_index])
