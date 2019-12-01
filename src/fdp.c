@@ -294,7 +294,9 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 			  late_bit[mshr_index] = 1;
 		  }
 
+#ifdef DEBUG
 		  printf("\n");
+
 		  
 		  for (mshr_index = 0; mshr_index < MSHR_SIZE; mshr_index++) {
 			  if (mshr_valid[mshr_index]) {
@@ -305,7 +307,7 @@ void l2_prefetcher_operate(int cpu_num, unsigned long long int addr, unsigned lo
 		  // printf("MSHR: %d\n", get_l2_mshr_occupancy(0));
 
 		  printf("{%lld 0x%llx 0x%llx %d %d %d}\n\n", get_current_cycle(0), pf_address, ip, cache_hit, get_l2_read_queue_occupancy(0), get_l2_mshr_occupancy(0));
-		  
+#endif
 	    }
 	}
     }
@@ -474,9 +476,10 @@ void l2_cache_fill(int cpu_num, unsigned long long int addr, int set, int way, i
 
 
 	}
-
+#ifdef DEBUG
   // uncomment this line to see the information available to you when there is a cache fill event
   printf("0x%llx %d %d %d 0x%llx\n", addr, set, way, prefetch, evicted_addr);
+#endif
 }
 
 void l2_prefetcher_heartbeat_stats(int cpu_num)
