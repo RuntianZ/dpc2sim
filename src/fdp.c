@@ -30,7 +30,7 @@
 // #define DEBUG
 
 
-#define MSHR_SIZE 256
+#define MSHR_SIZE 2048
 int useful_bit[L2_SET_COUNT][L2_ASSOCIATIVITY];
 
 // This mshr is only for prefetched lines
